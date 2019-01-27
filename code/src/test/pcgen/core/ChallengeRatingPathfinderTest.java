@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import pcgen.AbstractCharacterTestCase;
+import pcgen.output.json.SerializeToJSON;
 import pcgen.persistence.lst.CampaignSourceEntry;
 import pcgen.persistence.lst.GenericLoader;
 import pcgen.persistence.lst.PCClassLoader;
@@ -125,7 +126,7 @@ public class ChallengeRatingPathfinderTest extends AbstractCharacterTestCase
 		raceLoader.parseLine(context, null, miteLine, source);
 		miteRace = context.getReferenceContext().silentlyGetConstructedCDOMObject(Race.class, "Mite");
 
-		final String beetleLine = "Beetle	MONSTERCLASS:TestMonsterClass:1	CR:1/6	ROLE:Combat";
+		final String beetleLine = "Beetle	MONSTERCLASS:TestMonsterClass:1	CR:1/6	ROLE:Combat		VISION:Darkvision (60)	MOVE:40		";
 		raceLoader.parseLine(context, null, beetleLine, source);
 		beetleRace = context.getReferenceContext().silentlyGetConstructedCDOMObject(Race.class, "Beetle");
 
@@ -449,6 +450,7 @@ public class ChallengeRatingPathfinderTest extends AbstractCharacterTestCase
 		PlayerCharacter pc = getCharacter();
 		pc.setRace(beetleRace);
 		assertEquals(SettingsHandler.getGame().getCRInteger("1/6"), pc.getDisplay().calcCR(), 0.0);
+		SerializeToJSON.serializePC(pc);
 	}
 	/**
 	 * Test centipede => CR 1/8
