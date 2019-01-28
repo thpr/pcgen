@@ -45,10 +45,8 @@ public class SerializerUtilities
 	public static void writeFieldIfPresent(JsonObject jsonObject, String name,
 		Optional<?> optional, JsonSerializationContext context)
 	{
-		if (optional.isPresent())
-		{
-			jsonObject.add(name, context.serialize(optional.get()));
-		}
+		optional.ifPresent(
+			object -> jsonObject.add(name, context.serialize(object)));
 	}
 
 }

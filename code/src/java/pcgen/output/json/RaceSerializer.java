@@ -124,18 +124,16 @@ public class RaceSerializer implements JsonSerializer<Race>
 	private void writeVisionDetail(JsonObject jsonRace, PlayerCharacter pc,
 		List<Vision> visionList)
 	{
-		JsonArray visionArray = new JsonArray();
+		JsonObject jsonVision = new JsonObject();
 		for (Vision vision : visionList)
 		{
 			if (pc.isQualified(vision))
 			{
-				JsonObject jsonVision = new JsonObject();
 				jsonVision.addProperty(vision.getType().toString(),
 					vision.getDistance().resolve(pc, "").intValue());
-				visionArray.add(jsonVision);
 			}
 		}
-		jsonRace.add("resolvedVision", visionArray);
+		jsonRace.add("resolvedVision", jsonVision);
 	}
 
 	private void writeStatBonus(JsonObject jsonRace, PlayerCharacter pc,
@@ -167,14 +165,17 @@ public class RaceSerializer implements JsonSerializer<Race>
 
 	private boolean hasFavoredClassSelection(Race race)
 	{
-		return race.getSafeListFor(ListKey.NEW_CHOOSE_ACTOR).stream().filter(
-			actor -> actor.getClass().getSimpleName().equals("FavclassToken"))
-			.findFirst().isPresent();
+		return race.getSafeListFor(ListKey.NEW_CHOOSE_ACTOR)
+			.stream()
+			.filter(actor -> actor.getClass().getSimpleName()
+				.equals("FavclassToken"))
+			.findFirst()
+			.isPresent();
 	}
 
 	private String getRaceType(Race race)
 	{
-		RaceType rt = race.getSafe(ObjectKey.RACETYPE);
+		RaceType rt = race.get(ObjectKey.RACETYPE);
 		return (rt == null) ? "" : rt.toString();
 	}
 }
