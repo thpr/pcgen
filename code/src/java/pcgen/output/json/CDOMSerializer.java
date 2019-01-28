@@ -1,6 +1,5 @@
 package pcgen.output.json;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -20,123 +19,122 @@ import pcgen.core.display.DescriptionFormatting;
 import pcgen.core.prereq.PrerequisiteUtilities;
 import pcgen.util.StringPClassUtil;
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
 
 public class CDOMSerializer
 {
 
-	public static void addStandardItems(JsonGenerator jsonGenerator,
-		PObject cdo) throws IOException
+	public static void addStandardItems(JsonObject jsonObject, PObject cdo,
+		JsonSerializationContext context)
 	{
-		addIdentifier(jsonGenerator, cdo);
-		jsonGenerator.writeStringField("displayName", cdo.getDisplayName());
-		SerializerUtilities.writeFieldIfPresent(jsonGenerator, "localScopeName",
-			cdo.getLocalScopeName());
-		jsonGenerator.writeBooleanField("isInternal", cdo.isInternal());
-		jsonGenerator.writeBooleanField("nameIsPI", cdo.isNamePI());
-		jsonGenerator.writeBooleanField("descIsPI",
-			cdo.getSafe(ObjectKey.DESC_PI));
-		jsonGenerator.writeStringField("outputName", cdo.getOutputName());
+		addIdentifier(jsonObject, cdo);
+		jsonObject.addProperty("displayName", cdo.getDisplayName());
+		SerializerUtilities.writeFieldIfPresent(jsonObject, "localScopeName",
+			cdo.getLocalScopeName(), context);
+		jsonObject.addProperty("isInternal", cdo.isInternal());
+		jsonObject.addProperty("nameIsPI", cdo.isNamePI());
+		jsonObject.addProperty("descIsPI", cdo.getSafe(ObjectKey.DESC_PI));
+		jsonObject.addProperty("outputName", cdo.getOutputName());
 		Campaign campaign = cdo.get(ObjectKey.SOURCE_CAMPAIGN);
 		if (campaign != null)
 		{
-			jsonGenerator.writeStringField("sourceCampaign",
-				campaign.getKeyName());
+			jsonObject.addProperty("sourceCampaign", campaign.getKeyName());
 		}
-		jsonGenerator.writeObjectField("sourceURI", cdo.getSourceURI());
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator,
-			"sourceWeb", cdo.get(StringKey.SOURCE_WEB));
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator,
+		jsonObject.add("sourceURI", context.serialize(cdo.getSourceURI()));
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject, "sourceWeb",
+			cdo.get(StringKey.SOURCE_WEB));
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject,
 			"sourceShort", cdo.get(StringKey.SOURCE_SHORT));
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator,
-			"sourceLong", cdo.get(StringKey.SOURCE_LONG));
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator,
-			"sourcePage", cdo.get(StringKey.SOURCE_PAGE));
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator,
-			"sourceLink", cdo.get(StringKey.SOURCE_LINK));
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator,
-			"sourceWeb", cdo.get(StringKey.SOURCE_WEB));
-		SerializerUtilities.writeObjectFieldIfNotNull(jsonGenerator,
-			"sourceDate", cdo.get(ObjectKey.SOURCE_DATE));
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject, "sourceLong",
+			cdo.get(StringKey.SOURCE_LONG));
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject, "sourcePage",
+			cdo.get(StringKey.SOURCE_PAGE));
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject, "sourceLink",
+			cdo.get(StringKey.SOURCE_LINK));
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject, "sourceWeb",
+			cdo.get(StringKey.SOURCE_WEB));
+		SerializerUtilities.writeObjectFieldIfNotNull(jsonObject, "sourceDate",
+			cdo.get(ObjectKey.SOURCE_DATE), context);
 
-		SerializerUtilities.writeStringFieldIfNotBlank(jsonGenerator, "sortKey",
+		SerializerUtilities.writeStringFieldIfNotBlank(jsonObject, "sortKey",
 			cdo.get(StringKey.SORT_KEY));
 
 		//END to-do
-		SerializerUtilities.writeList(jsonGenerator, "type",
-			cdo.getTrueTypeList(true));
-		writeFactSets(jsonGenerator, cdo);
-		writeFacts(jsonGenerator, cdo);
+		SerializerUtilities.writeList(jsonObject, "type",
+			cdo.getTrueTypeList(true), context);
+		writeFactSets(jsonObject, cdo);
+		writeFacts(jsonObject, cdo);
 	}
 
-	public static void addIdentifier(JsonGenerator jsonGenerator, PObject cdo)
-		throws IOException
+	public static void addIdentifier(JsonObject jsonObject, PObject cdo)
 	{
-		jsonGenerator.writeStringField("format",
+		jsonObject.addProperty("format",
 			StringPClassUtil.getStringFor(cdo.getClass()));
-		jsonGenerator.writeStringField("key", cdo.getKeyName());
+		jsonObject.addProperty("key", cdo.getKeyName());
 	}
 
-	private static void writeFacts(JsonGenerator jsonGenerator, PObject cdo)
-		throws IOException
+	private static void writeFacts(JsonObject jsonObject, PObject cdo)
 	{
 		Set<FactKey<?>> keys = cdo.getFactKeys();
 		if (keys.isEmpty())
 		{
 			return;
 		}
-		jsonGenerator.writeArrayFieldStart("fact");
+		JsonArray factBlock = new JsonArray();
 		for (FactKey<?> factKey : keys)
 		{
-			processFact(jsonGenerator, cdo, factKey);
+			processFact(factBlock, cdo, factKey);
 		}
-		jsonGenerator.writeEndArray();
-
+		jsonObject.add("fact", factBlock);
 	}
 
-	private static <T> void processFact(JsonGenerator jsonGenerator,
-		PObject cdo, FactKey<T> factKey) throws IOException
+	private static <T> void processFact(JsonArray factBlock, PObject cdo,
+		FactKey<T> factKey)
 	{
+		JsonObject factDetail = new JsonObject();
 		FormatManager<T> formatManager = factKey.getFormatManager();
 		Indirect<T> fact = cdo.get(factKey);
-		jsonGenerator.writeFieldName(factKey.toString());
-		jsonGenerator.writeStringField(formatManager.getIdentifierType(),
-			formatManager.unconvert(fact.get()));
+		factDetail.addProperty("factName", factKey.toString());
+		factDetail.addProperty("format", formatManager.getIdentifierType());
+		factDetail.addProperty("value", formatManager.unconvert(fact.get()));
+		factBlock.add(factDetail);
 	}
 
-	private static void writeFactSets(JsonGenerator jsonGenerator, PObject cdo)
-		throws IOException
+	private static void writeFactSets(JsonObject jsonObject, PObject cdo)
 	{
 		Set<FactSetKey<?>> keys = cdo.getFactSetKeys();
 		if (keys.isEmpty())
 		{
 			return;
 		}
-		jsonGenerator.writeArrayFieldStart("factset");
+		JsonArray factSetBlock = new JsonArray();
 		for (FactSetKey<?> factSetKey : keys)
 		{
-			processFactSet(jsonGenerator, cdo, factSetKey);
+			processFactSet(factSetBlock, cdo, factSetKey);
 		}
-		jsonGenerator.writeEndArray();
+		jsonObject.add("factSet", factSetBlock);
 	}
 
-	private static <T> void processFactSet(JsonGenerator jsonGenerator,
-		PObject cdo, FactSetKey<T> factSetKey) throws IOException
+	private static <T> void processFactSet(JsonArray factSetBlock, PObject cdo,
+		FactSetKey<T> factSetKey)
 	{
+		JsonObject factSetDetail = new JsonObject();
 		FormatManager<T> formatManager = factSetKey.getFormatManager();
 		List<Indirect<T>> factSet = cdo.getSetFor(factSetKey);
-		jsonGenerator.writeArrayFieldStart(factSetKey.toString());
-		String identifier = formatManager.getIdentifierType();
+		factSetDetail.addProperty("factSetName", factSetKey.toString());
+		factSetDetail.addProperty("format", formatManager.getIdentifierType());
+		JsonArray jsonFactSetInfo = new JsonArray();
 		for (Indirect<T> indirect : factSet)
 		{
-			jsonGenerator.writeStringField(identifier,
-				formatManager.unconvert(indirect.get()));
+			jsonFactSetInfo.add(formatManager.unconvert(indirect.get()));
 		}
-		jsonGenerator.writeEndArray();
+		factSetDetail.add("value", jsonFactSetInfo);
+		factSetBlock.add(factSetDetail);
 	}
 
-	public static void writePreReq(JsonGenerator jsonGenerator, CDOMObject cdo)
-		throws IOException
+	public static void writePreReq(JsonObject jsonObject, CDOMObject cdo)
 	{
 		if (!cdo.hasPrerequisites())
 		{
@@ -149,21 +147,21 @@ public class CDOMSerializer
 			cdo.getPrerequisiteList(), false));
 		sb.append(AllowUtilities.getAllowInfo(pc, cdo));
 		sb.append("</html>");
-		jsonGenerator.writeStringField("prerequisites", sb.toString());
+		jsonObject.addProperty("prerequisites", sb.toString());
 	}
 
-	public static void writeDescription(JsonGenerator jsonGenerator,
-		PObject cdo) throws IOException
+	public static void writeDescription(JsonObject jsonObject, PObject cdo)
 	{
 		PlayerCharacter pc = SerializerContext.pcContext.get();
-		jsonGenerator.writeStringField("description", DescriptionFormatting
+		jsonObject.addProperty("description", DescriptionFormatting
 			.piWrapDesc(cdo, pc.getDescription(cdo), false));
 	}
 
-	public static void writeList(JsonGenerator jsonGenerator, CDOMObject cdo,
-		String name, ListKey<?> key) throws IOException
+	public static void writeList(JsonObject jsonObject, CDOMObject cdo,
+		String name, ListKey<?> key, JsonSerializationContext context)
 	{
-		SerializerUtilities.writeList(jsonGenerator, name, cdo.getListFor(key));
+		SerializerUtilities.writeList(jsonObject, name, cdo.getListFor(key),
+			context);
 	}
 
 }

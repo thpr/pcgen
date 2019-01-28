@@ -1,68 +1,57 @@
 package pcgen.output.json;
 
-import java.io.IOException;
+import java.lang.reflect.Type;
 
 import pcgen.core.Movement;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
-public class MovementSerializer extends StdSerializer<Movement>
+public class MovementSerializer implements JsonSerializer<Movement>
 {
-	public MovementSerializer()
-	{
-		this(null);
-	}
-
-	public MovementSerializer(Class<Movement> t)
-	{
-		super(t);
-	}
 
 	@Override
-	public void serialize(Movement movement, JsonGenerator jsonGenerator,
-		SerializerProvider serializer) throws IOException
+	public JsonElement serialize(Movement movement, Type typeOfSrc,
+		JsonSerializationContext context)
 	{
-		//Note jsonGenerator.getOutputContext() can be used to determine whether to write items beyond the identifier
-
-		jsonGenerator.writeStartObject();
+		JsonObject jsonMovement = new JsonObject();
 		int flag = movement.getMoveRatesFlag();
 		if (flag == 0)
 		{
-			jsonGenerator.writeArrayFieldStart("moveInfo");
+			JsonArray jsonMoveInfo = new JsonArray();
 			for (int i = 0; i < movement.getNumberOfMovements(); i++)
 			{
 				String type = movement.getMovementType(i);
 				{
-					jsonGenerator.writeStartObject();
-					jsonGenerator.writeNumberField(type,
-						movement.getMovement(i));
-					jsonGenerator.writeEndObject();
+					JsonObject movementField = new JsonObject();
+					movementField.addProperty(type, movement.getMovement(i));
+					jsonMoveInfo.add(movementField);
 				}
 			}
-			jsonGenerator.writeEndArray();
+			jsonMovement.add("moveInfo", jsonMoveInfo);
 		}
 		else // flag is 2
 		{
-			jsonGenerator.writeStringField("cloneSource",
+			jsonMovement.addProperty("cloneSource",
 				movement.getMovementType(0));
-			jsonGenerator.writeStringField("cloneTarget",
+			jsonMovement.addProperty("cloneTarget",
 				movement.getMovementType(1));
 			String operator = movement.getMovementMultOp(1);
-			jsonGenerator.writeStringField("operator", operator);
+			jsonMovement.addProperty("operator", operator);
 			if (operator.isBlank())
 			{
-				jsonGenerator.writeNumberField("modValue",
-					movement.getMovement(1));
+				jsonMovement.addProperty("modValue", movement.getMovement(1));
 			}
 			else
 			{
-				jsonGenerator.writeNumberField("modValue",
+				jsonMovement.addProperty("modValue",
 					movement.getMovementMult(1));
 			}
 		}
 
-		jsonGenerator.writeEndObject();
+		return jsonMovement;
 	}
 }

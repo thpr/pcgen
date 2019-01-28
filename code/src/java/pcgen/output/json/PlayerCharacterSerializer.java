@@ -1,36 +1,26 @@
 package pcgen.output.json;
 
-import java.io.IOException;
+import java.lang.reflect.Type;
 
 import pcgen.core.PlayerCharacter;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
-public class PlayerCharacterSerializer extends StdSerializer<PlayerCharacter>
+public class PlayerCharacterSerializer
+		implements JsonSerializer<PlayerCharacter>
 {
 
-	public PlayerCharacterSerializer()
-	{
-		this(null);
-	}
-
-	public PlayerCharacterSerializer(Class<PlayerCharacter> t)
-	{
-		super(t);
-	}
-
 	@Override
-	public void serialize(PlayerCharacter pc, JsonGenerator jsonGenerator,
-		SerializerProvider serializer) throws IOException
+	public JsonElement serialize(PlayerCharacter pc, Type typeOfSrc,
+		JsonSerializationContext context)
 	{
-		//Note jsonGenerator.getOutputContext() can be used to determine whether to write items beyond the identifier
-
 		try
 		{
 			SerializerContext.pcContext.set(pc);
-			writeDetail(pc, jsonGenerator, serializer);
+			return writeDetail(pc, context);
 		}
 		finally
 		{
@@ -38,14 +28,13 @@ public class PlayerCharacterSerializer extends StdSerializer<PlayerCharacter>
 		}
 	}
 
-	private void writeDetail(PlayerCharacter pc, JsonGenerator jsonGenerator,
-		SerializerProvider serializer) throws IOException
+	private JsonElement writeDetail(PlayerCharacter pc,
+		JsonSerializationContext context)
 	{
-		jsonGenerator.writeStartObject();
-		jsonGenerator.writeStringField("name", pc.getName());
-		jsonGenerator.writeObjectField("race", pc.getRace());
-
-		jsonGenerator.writeEndObject();
+		JsonObject pcJson = new JsonObject();
+		pcJson.addProperty("name", pc.getName());
+		pcJson.add("race", context.serialize(pc.getRace()));
+		return pcJson;
 	}
 
 }

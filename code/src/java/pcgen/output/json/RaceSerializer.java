@@ -1,6 +1,6 @@
 package pcgen.output.json;
 
-import java.io.IOException;
+import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Collection;
@@ -21,77 +21,69 @@ import pcgen.core.Race;
 import pcgen.core.Vision;
 import pcgen.core.analysis.BonusCalc;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import org.apache.commons.collections4.CollectionUtils;
 
-public class RaceSerializer extends StdSerializer<Race>
+public class RaceSerializer implements JsonSerializer<Race>
 {
+
 	private static final NumberFormat ADJ_FMT = new DecimalFormat("+0;-0"); //$NON-NLS-1$
 
-	public RaceSerializer()
-	{
-		this(null);
-	}
-
-	public RaceSerializer(Class<Race> t)
-	{
-		super(t);
-	}
-
 	@Override
-	public void serialize(Race race, JsonGenerator jsonGenerator,
-		SerializerProvider serializer) throws IOException
+	public JsonElement serialize(Race race, Type typeOfSrc,
+		JsonSerializationContext context)
 	{
-		//Note jsonGenerator.getOutputContext() can be used to determine whether to write items beyond the identifier
+		JsonObject jsonRace = new JsonObject();
 
-		jsonGenerator.writeStartObject();
-		CDOMSerializer.addStandardItems(jsonGenerator, race);
+		CDOMSerializer.addStandardItems(jsonRace, race, context);
 
 		//Types
-		SerializerUtilities.writeList(jsonGenerator, "subtypes",
-			race.getListFor(ListKey.RACESUBTYPE));
-		jsonGenerator.writeStringField("racetype", getRaceType(race));
+		SerializerUtilities.writeList(jsonRace, "subtypes",
+			race.getListFor(ListKey.RACESUBTYPE), context);
+		jsonRace.addProperty("racetype", getRaceType(race));
 
 		//FavoredClass
-		jsonGenerator.writeBooleanField("anyFavoredClass",
+		jsonRace.addProperty("anyFavoredClass",
 			race.getSafe(ObjectKey.ANY_FAVORED_CLASS));
-		jsonGenerator.writeBooleanField("selectFavoredClass",
+		jsonRace.addProperty("selectFavoredClass",
 			hasFavoredClassSelection(race));
-		SerializerUtilities.writeList(jsonGenerator, "favoredClass",
-			race.getListFor(ListKey.FAVORED_CLASS));
+		SerializerUtilities.writeList(jsonRace, "favoredClass",
+			race.getListFor(ListKey.FAVORED_CLASS), context);
 
 		//Movement
 		List<Movement> movements = race.getListFor(ListKey.BASE_MOVEMENT);
 		if (movements != null && !movements.isEmpty())
 		{
-			jsonGenerator.writeStringField("move", movements.get(0).toString());
+			jsonRace.addProperty("move", movements.get(0).toString());
 		}
-		SerializerUtilities.writeList(jsonGenerator, "movement", movements);
+		SerializerUtilities.writeList(jsonRace, "movement", movements, context);
 
 		//Size
-		jsonGenerator.writeStringField("size", getSizeFormula(race));
+		jsonRace.addProperty("size", getSizeFormula(race));
 
 		//Hit Dice
-		jsonGenerator.writeBooleanField("advancedUnlimited",
+		jsonRace.addProperty("advancedUnlimited",
 			race.isAdvancementUnlimited());
-		jsonGenerator.writeNumberField("maxHitDiceAdvancement",
+		jsonRace.addProperty("maxHitDiceAdvancement",
 			race.maxHitDiceAdvancement());
 
 		//Stat Locking
-		CDOMSerializer.writeList(jsonGenerator, race, "statLocks",
-			ListKey.STAT_LOCKS);
-		CDOMSerializer.writeList(jsonGenerator, race, "unlockedStats",
-			ListKey.UNLOCKED_STATS);
-		CDOMSerializer.writeList(jsonGenerator, race, "nonStats",
-			ListKey.NONSTAT_STATS);
-		CDOMSerializer.writeList(jsonGenerator, race, "returnedStats",
-			ListKey.NONSTAT_TO_STAT_STATS);
-		CDOMSerializer.writeList(jsonGenerator, race, "minStatValues",
-			ListKey.STAT_MINVALUE);
-		CDOMSerializer.writeList(jsonGenerator, race, "maxStatValues",
-			ListKey.STAT_MAXVALUE);
+		CDOMSerializer.writeList(jsonRace, race, "statLocks",
+			ListKey.STAT_LOCKS, context);
+		CDOMSerializer.writeList(jsonRace, race, "unlockedStats",
+			ListKey.UNLOCKED_STATS, context);
+		CDOMSerializer.writeList(jsonRace, race, "nonStats",
+			ListKey.NONSTAT_STATS, context);
+		CDOMSerializer.writeList(jsonRace, race, "returnedStats",
+			ListKey.NONSTAT_TO_STAT_STATS, context);
+		CDOMSerializer.writeList(jsonRace, race, "minStatValues",
+			ListKey.STAT_MINVALUE, context);
+		CDOMSerializer.writeList(jsonRace, race, "maxStatValues",
+			ListKey.STAT_MAXVALUE, context);
 
 		PlayerCharacter pc = SerializerContext.pcContext.get();
 
@@ -100,74 +92,65 @@ public class RaceSerializer extends StdSerializer<Race>
 			.emptyIfNull(race.getListMods(Vision.VISIONLIST));
 		List<Vision> visionList =
 				flattenReferenceCollection(mods).collect(Collectors.toList());
-		jsonGenerator.writeArrayFieldStart("vision");
+		JsonArray visionArray = new JsonArray();
 		for (Vision vision : visionList)
 		{
-			jsonGenerator.writeObject(vision);
+			visionArray.add(context.serialize(vision));
 		}
-		jsonGenerator.writeEndArray();
+		jsonRace.add("vision", visionArray);
 
 		if (pc != null)
 		{
 			//Level Adjustment
 			String levelAdjustment = ADJ_FMT.format(
 				race.getSafe(FormulaKey.LEVEL_ADJUSTMENT).resolve(pc, ""));
-			jsonGenerator.writeStringField("levelAdjustment", levelAdjustment);
+			jsonRace.addProperty("levelAdjustment", levelAdjustment);
 
 			//Description
-			CDOMSerializer.writeDescription(jsonGenerator, race);
+			CDOMSerializer.writeDescription(jsonRace, race);
 
 			//Details of Vision
-			writeVisionDetail(jsonGenerator, pc, visionList);
+			writeVisionDetail(jsonRace, pc, visionList);
 
 			//Stat Bonuses
-			writeStatBonus(jsonGenerator, pc, race);
+			writeStatBonus(jsonRace, pc, race);
 
 			//Prerequisites
-			CDOMSerializer.writePreReq(jsonGenerator, race);
+			CDOMSerializer.writePreReq(jsonRace, race);
 		}
-
-		jsonGenerator.writeEndObject();
+		return jsonRace;
 	}
 
-	private void writeVisionDetail(JsonGenerator jsonGenerator,
-		PlayerCharacter pc, List<Vision> visionList) throws IOException
+	private void writeVisionDetail(JsonObject jsonRace, PlayerCharacter pc,
+		List<Vision> visionList)
 	{
-		jsonGenerator.writeArrayFieldStart("resolvedVision");
+		JsonArray visionArray = new JsonArray();
 		for (Vision vision : visionList)
 		{
 			if (pc.isQualified(vision))
 			{
-				jsonGenerator.writeStartObject();
-				jsonGenerator.writeNumberField(vision.getType().toString(),
+				JsonObject jsonVision = new JsonObject();
+				jsonVision.addProperty(vision.getType().toString(),
 					vision.getDistance().resolve(pc, "").intValue());
-				jsonGenerator.writeEndObject();
+				visionArray.add(jsonVision);
 			}
 		}
-		jsonGenerator.writeEndArray();
+		jsonRace.add("resolvedVision", visionArray);
 	}
 
-	private void writeStatBonus(JsonGenerator jsonGenerator, PlayerCharacter pc,
-		Race race) throws IOException
+	private void writeStatBonus(JsonObject jsonRace, PlayerCharacter pc,
+		Race race)
 	{
-		boolean hasBonus = false;
+		JsonObject statDetail = new JsonObject();
 		for (PCStat stat : pc.getStatSet())
 		{
 			if (BonusCalc.getStatMod(race, stat, pc) != 0)
 			{
-				if (!hasBonus)
-				{
-					jsonGenerator.writeArrayFieldStart("statBonuses");
-					hasBonus = true;
-				}
-				jsonGenerator.writeNumberField(stat.getKeyName(),
+				statDetail.addProperty(stat.getKeyName(),
 					+BonusCalc.getStatMod(race, stat, pc));
 			}
 		}
-		if (hasBonus)
-		{
-			jsonGenerator.writeEndArray();
-		}
+		jsonRace.add("statBonus", statDetail);
 	}
 
 	private Stream<Vision> flattenReferenceCollection(

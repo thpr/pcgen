@@ -1,52 +1,53 @@
 package pcgen.output.json;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
 
 public class SerializerUtilities
 {
 
-	static void writeList(JsonGenerator jsonGenerator, String fieldName,
-		List<?> list) throws IOException
+	static void writeList(JsonObject jsonObject, String fieldName, List<?> list,
+		JsonSerializationContext context)
 	{
 		if ((list != null) && !list.isEmpty())
 		{
-			jsonGenerator.writeArrayFieldStart(fieldName);
+			JsonArray jsonArray = new JsonArray();
 			for (Object obj : list)
 			{
-				jsonGenerator.writeObject(obj);
+				jsonArray.add(context.serialize(obj));
 			}
-			jsonGenerator.writeEndArray();
+			jsonObject.add(fieldName, jsonArray);
 		}
 	}
 
-	public static void writeStringFieldIfNotBlank(JsonGenerator jsonGenerator,
-		String name, String value) throws IOException
+	public static void writeStringFieldIfNotBlank(JsonObject jsonObject,
+		String name, String value)
 	{
 		if ((value != null) && !value.isBlank())
 		{
-			jsonGenerator.writeStringField(name, value);
+			jsonObject.addProperty(name, value);
 		}
 	}
 
-	public static void writeObjectFieldIfNotNull(JsonGenerator jsonGenerator,
-		String name, Object value) throws IOException
+	public static void writeObjectFieldIfNotNull(JsonObject jsonObject,
+		String name, Object value, JsonSerializationContext context)
 	{
 		if (value != null)
 		{
-			jsonGenerator.writeObjectField(name, value);
+			jsonObject.add(name, context.serialize(value));
 		}
 	}
 
-	public static void writeFieldIfPresent(JsonGenerator jsonGenerator,
-		String name, Optional<?> optional) throws IOException
+	public static void writeFieldIfPresent(JsonObject jsonObject, String name,
+		Optional<?> optional, JsonSerializationContext context)
 	{
 		if (optional.isPresent())
 		{
-			jsonGenerator.writeObjectField(name, optional.get());
+			jsonObject.add(name, context.serialize(optional.get()));
 		}
 	}
 

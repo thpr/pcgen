@@ -1,39 +1,28 @@
 package pcgen.output.json;
 
-import java.io.IOException;
+import java.lang.reflect.Type;
 
 import pcgen.base.formula.Formula;
 import pcgen.core.Vision;
 import pcgen.util.enumeration.VisionType;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
-public class VisionSerializer extends StdSerializer<Vision>
+public class VisionSerializer implements JsonSerializer<Vision>
 {
-	public VisionSerializer()
-	{
-		this(null);
-	}
-
-	public VisionSerializer(Class<Vision> t)
-	{
-		super(t);
-	}
-
 	@Override
-	public void serialize(Vision vision, JsonGenerator jsonGenerator,
-		SerializerProvider serializer) throws IOException
+	public JsonElement serialize(Vision vision, Type typeOfSrc,
+		JsonSerializationContext context)
 	{
-		//Note jsonGenerator.getOutputContext() can be used to determine whether to write items beyond the identifier
-
-		jsonGenerator.writeStartObject();
+		JsonObject jsonVision = new JsonObject();
 		VisionType visionType = vision.getType();
-		jsonGenerator.writeStringField("type", visionType.toString());
 		Formula distance = vision.getDistance();
-		jsonGenerator.writeStringField("distance", distance.toString());
-		CDOMSerializer.writePreReq(jsonGenerator, vision);
-		jsonGenerator.writeEndObject();
+		jsonVision.addProperty("type", visionType.toString());
+		jsonVision.addProperty("distance", distance.toString());
+		CDOMSerializer.writePreReq(jsonVision, vision);
+		return jsonVision;
 	}
 }
