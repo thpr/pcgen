@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 (C) Tom Parker <thpr@users.sourceforge.net>
+ * 
+ * This library is free software; you can redistribute it and/or modify it under the terms
+ * of the GNU Lesser General Public License as published by the Free Software Foundation;
+ * either version 2.1 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License along with
+ * this library; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+ * Suite 330, Boston, MA 02111-1307 USA
+ */
 package pcgen.output.json;
 
 import java.lang.reflect.Type;
@@ -14,10 +29,10 @@ import pcgen.cdom.enumeration.FormulaKey;
 import pcgen.cdom.enumeration.ListKey;
 import pcgen.cdom.enumeration.ObjectKey;
 import pcgen.cdom.enumeration.RaceType;
-import pcgen.core.Movement;
 import pcgen.core.PCStat;
 import pcgen.core.PlayerCharacter;
 import pcgen.core.Race;
+import pcgen.core.SimpleMovement;
 import pcgen.core.Vision;
 import pcgen.core.analysis.BonusCalc;
 
@@ -42,9 +57,10 @@ public class RaceSerializer implements JsonSerializer<Race>
 		CDOMSerializer.addStandardItems(jsonRace, race, context);
 
 		//Types
-		SerializerUtilities.writeList(jsonRace, "subtypes",
-			race.getListFor(ListKey.RACESUBTYPE), context);
 		jsonRace.addProperty("racetype", getRaceType(race));
+		jsonRace.add("subtypes",
+			context.serialize(race.getListFor(ListKey.RACESUBTYPE),
+				SerializerUtilities.LISTTYPE_RACESUBTYPE));
 
 		//FavoredClass
 		jsonRace.addProperty("anyFavoredClass",
@@ -55,12 +71,13 @@ public class RaceSerializer implements JsonSerializer<Race>
 			race.getListFor(ListKey.FAVORED_CLASS), context);
 
 		//Movement
-		List<Movement> movements = race.getListFor(ListKey.BASE_MOVEMENT);
+		List<SimpleMovement> movements = race.getListFor(ListKey.BASE_MOVEMENT);
 		if (movements != null && !movements.isEmpty())
 		{
-			jsonRace.addProperty("move", movements.get(0).toString());
+			jsonRace.add("baseMove", context.serialize(movements.get(0)));
 		}
-		SerializerUtilities.writeList(jsonRace, "movement", movements, context);
+		jsonRace.add("movement", context.serialize(movements,
+			SerializerUtilities.LISTTYPE_SIMPLEMOVEMENT));
 
 		//Size
 		jsonRace.addProperty("size", getSizeFormula(race));

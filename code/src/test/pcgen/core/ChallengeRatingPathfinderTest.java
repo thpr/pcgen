@@ -126,7 +126,7 @@ public class ChallengeRatingPathfinderTest extends AbstractCharacterTestCase
 		raceLoader.parseLine(context, null, miteLine, source);
 		miteRace = context.getReferenceContext().silentlyGetConstructedCDOMObject(Race.class, "Mite");
 
-		final String beetleLine = "Beetle	MONSTERCLASS:TestMonsterClass:1	CR:1/6	ROLE:Combat		VISION:Darkvision (60)	MOVE:40		";
+		final String beetleLine = "Beetle	MONSTERCLASS:TestMonsterClass:1	CR:1/6	ROLE:Combat		VISION:Darkvision (60)	MOVE:Walk,40,Fly,200		";
 		raceLoader.parseLine(context, null, beetleLine, source);
 		beetleRace = context.getReferenceContext().silentlyGetConstructedCDOMObject(Race.class, "Beetle");
 

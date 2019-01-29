@@ -16,6 +16,7 @@
 package pcgen.output.json;
 
 import java.lang.reflect.Type;
+import java.util.List;
 
 import pcgen.core.SimpleMovement;
 
@@ -24,17 +25,20 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-public class MovementSerializer implements JsonSerializer<SimpleMovement>
+public class SimpleMovementSerializer
+		implements JsonSerializer<List<SimpleMovement>>
 {
 
 	@Override
-	public JsonElement serialize(SimpleMovement movement, Type typeOfSrc,
-		JsonSerializationContext context)
+	public JsonElement serialize(List<SimpleMovement> raceSubTypes,
+		Type typeOfSrc, JsonSerializationContext context)
 	{
-		JsonObject jsonMovement = new JsonObject();
-		jsonMovement.addProperty("movementType",
-			movement.getMovementType().toString());
-		jsonMovement.addProperty("rate", movement.getMovement());
-		return jsonMovement;
+		JsonObject jsonMovements = new JsonObject();
+		for (SimpleMovement movement : raceSubTypes)
+		{
+			jsonMovements.addProperty(movement.getMovementType().toString(),
+				movement.getMovement());
+		}
+		return jsonMovements;
 	}
 }

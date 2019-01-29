@@ -162,6 +162,7 @@ import pcgen.output.channel.ChannelCompatibility;
 import pcgen.output.channel.compat.AlignmentCompat;
 import pcgen.output.channel.compat.GenderCompat;
 import pcgen.output.channel.compat.HandedCompat;
+import pcgen.output.json.SerializeToJSON;
 import pcgen.pluginmgr.PluginManager;
 import pcgen.pluginmgr.messages.PlayerCharacterWasClosedMessage;
 import pcgen.system.CharacterManager;
@@ -2353,6 +2354,7 @@ public class CharacterFacadeImpl
 		{
 			try
 			{
+				SerializeToJSON.serializePC(theCharacter);
 				Logging.log(Logging.DEBUG,
 					"Starting export at serial " + theCharacter.getSerial() + " to " + theHandler.getTemplateFile());
 				PlayerCharacter exportPc = getExportCharacter();
